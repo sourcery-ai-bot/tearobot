@@ -91,7 +91,7 @@ def tweet(text):
     t_api_secret = os.environ.get("TWITTER_API_SECRET")
     t_token = os.environ.get("TWITTER_TOKEN")
     t_token_secret = os.environ.get("TWITTER_TOKEN_SECRET")
-    if not t_api or not t_api_secret or not t_token or not t_token_secret:
+    if not (t_api and t_api_secret and t_token and t_token_secret):
         sys.stderr.write("Please provide twitter tokens.")
         sys.exit(1)
 

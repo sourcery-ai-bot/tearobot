@@ -45,10 +45,8 @@ def send_message(chat_id, text):
 
 def last_update_id(updates):
     """takes dict of updates and return the id of last one"""
-    update_ids = []
     log.info("listing updates to be handled...")
-    for update in updates["result"]:
-        update_ids.append(int(update["update_id"]))
+    update_ids = [int(update["update_id"]) for update in updates["result"]]
     return max(update_ids)  # the last update is the higher one
 
 
@@ -92,14 +90,12 @@ def handle_updates(updates: list, db: DBHelper):
         # updated: int(unix_timestamp), last_command: str))
         user_id = update.get("message").get("from").get("id")
         user_is_bot = update.get("message").get("from").get("is_bot")
-        user_is_admin = False
         user_first_name = update.get("message").get("from").get("first_name")
         user_last_name = update.get("message").get("from").get("last_name")
         user_username = update.get("message").get("from").get("username")
         user_language_code = (
             update.get("message").get("from").get("language_code", "en")
         )
-        user_active = True
         user_created = time.time()
         user_updated = time.time()
         user_last_command = None
@@ -107,6 +103,8 @@ def handle_updates(updates: list, db: DBHelper):
         log.info("collecting user data... done")
         # if user doesn't exist, add him/her to db
         if not db.get_user(user_id):
+            user_is_admin = False
+            user_active = True
             user = User(
                 user_id,
                 user_is_bot,
@@ -138,9 +136,7 @@ def handle_updates(updates: list, db: DBHelper):
         user_last_command = user.last_command
         text = None  # msg text
         chat = msg_chat_id  # chat id
-        log.debug(
-            "user: " + str(user_id) + " sent a message - chat_id: " + str(msg_chat_id)
-        )
+        log.debug("user: " + str(user_id) + " sent a message - chat_id: " + str(chat))
         if msg_text:  # handle text messages only
             text = msg_text.strip()  # extract msg text
             if text and chat:  # make sure we have txt msg and chat_id
@@ -202,7 +198,7 @@ def handle_updates(updates: list, db: DBHelper):
                         log.info("received command arguments from user...")
                         send_message(chat, get_command_handler(last_command)(text))
                         log.info("sending message to user... done")
-                    elif current_command == "/start" or current_command == "/stop":
+                    elif current_command in ["/start", "/stop"]:
                         continue  # skip
                     else:
                         log.info("Undefined Command.")
@@ -245,30 +241,32 @@ def main(db: DBHelper):
             after_eight = dtime(8, 0, 15)  # get after 8:00AM with 5 seconds
 
             # if it's in range (07:59:55 |08:00| 08:00:05) in the morning
-            if time_in_range(before_eight, after_eight, now_in_egypt):
-                if today in study_days:
-                    schedule = db.get_schedule_of(
-                        weekdays[today]
-                    )  # get schedule of today
-                    # ================== formating the message to send
-                    msg_schedule_part = ""
-                    for idx, entry in enumerate(schedule):
-                        msg_schedule_part += (
-                            str(idx + 1) + ". " + entry[1] + " at " + entry[0] + "\n"
-                        )
-                    msg = (
-                        "Good morning, \n"
-                        "today is {0} and the schedule is: \n\n"
-                        "{1}".format(weekdays[today].title(), msg_schedule_part)
+            if (
+                time_in_range(before_eight, after_eight, now_in_egypt)
+                and today in study_days
+            ):
+                schedule = db.get_schedule_of(
+                    weekdays[today]
+                )  # get schedule of today
+                # ================== formating the message to send
+                msg_schedule_part = ""
+                for idx, entry in enumerate(schedule):
+                    msg_schedule_part += (
+                        str(idx + 1) + ". " + entry[1] + " at " + entry[0] + "\n"
                     )
-                    users = db.get_users()  # get list of all users
-                    for user in users:
-                        if user.active:
-                            log.info(f"Sending today's schedule to: {user}")
-                            send_message(user.chat_id, msg)  # send today's schedule
-                            time.sleep(
-                                0.5
-                            )  # sleep for .5 second before sending to the next user
+                msg = (
+                    "Good morning, \n"
+                    "today is {0} and the schedule is: \n\n"
+                    "{1}".format(weekdays[today].title(), msg_schedule_part)
+                )
+                users = db.get_users()  # get list of all users
+                for user in users:
+                    if user.active:
+                        log.info(f"Sending today's schedule to: {user}")
+                        send_message(user.chat_id, msg)  # send today's schedule
+                        time.sleep(
+                            0.5
+                        )  # sleep for .5 second before sending to the next user
 
             # =============================== Handling Announcements =========================================
             before_seven = dtime(6, 59, 45)  # get before 7:00AM with 5 seconds

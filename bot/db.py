@@ -80,7 +80,7 @@ class DBHelper:
         try:
             self.cur.execute(sql, (message_id,))
             rows = [row for row in self.cur.fetchall()]
-            if len(rows) > 0:
+            if rows:
                 msg = Message(*rows[0])
                 log.debug("Message Content: " + str(msg.text))
                 log.info("Message Retrieved with id: " + str(msg.id))
@@ -138,7 +138,7 @@ class DBHelper:
     def get_users(self) -> list:
         """Return list of all Users"""
         sql = "SELECT * FROM User"
-        users_list = list()
+        users_list = []
         try:
             for user in self.cur.execute(sql).fetchall():
                 users_list.append(User(*user))
@@ -234,7 +234,7 @@ class DBHelper:
     def get_announcements(self) -> list:
         """Retrieve description and time field from Announcement"""
         sql = "SELECT * FROM Announcement"
-        ann_list = list()
+        ann_list = []
         try:
             result = self.cur.execute(sql)
             for ann in result.fetchall():

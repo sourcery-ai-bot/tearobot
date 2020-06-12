@@ -26,17 +26,13 @@ def is_available_command(command):
         "/stop",
     ]
 
-    if command in available_commands:
-        return True
-    return False
+    return command in available_commands
 
 
 def command_takes_input(command):
     """Checks if ``command`` operates on inputs or not"""
     takes_input = ["/translate", "/calculate", "/tweet", "/ocr_url"]
-    if command in takes_input:
-        return True
-    return False
+    return command in takes_input
 
 
 def get_hint_message(command):
